@@ -1,0 +1,99 @@
+<html>
+  <head>
+    <style type="text/css">
+      body {
+        font-family: sans-serif;
+      }
+
+      h3 {
+        font-size: 24pt;
+      }
+
+      #firstGiftChart {
+        font-size: 18pt;
+      }
+    </style>
+    <!--Load the AJAX API-->
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+
+      // Load the Visualization API and the corechart package.
+      google.charts.load('current', {'packages':['corechart']});
+
+      // Set a callback to run when the Google Visualization API is loaded.
+      google.charts.setOnLoadCallback(initializeCharts);
+
+      var giftCountOptions = {
+        // 'title': 'Number of Gifts Delivered',
+        'width': '100%',
+        'height': 800
+      };
+      var giftCountChart = null;
+
+      function initializeCharts() {
+        // Instantiate and draw our chart, passing in some options.
+        giftCountChart = new google.visualization.BarChart(document.getElementById('giftCountChart'));
+
+        startLoadingData();
+      }
+
+      function startLoadingData() {
+        setTimeout(startLoadingData, 30000);
+
+        var baseUrl = "https://tech-days-gift-aggregation.azurewebsites.net";
+        var giftCountRequest = new XMLHttpRequest();
+        giftCountRequest.addEventListener("load", drawGiftCountChart);
+        giftCountRequest.open("GET", baseUrl + "/api/giftCountByProductionLine");
+        giftCountRequest.send();
+
+        var firstGiftRequest = new XMLHttpRequest();
+        firstGiftRequest.addEventListener("load", drawFirstGiftChart);
+        firstGiftRequest.open("GET", baseUrl + "/api/firstGiftByProductionLine");
+        firstGiftRequest.send();
+      }
+
+      function drawGiftCountChart() {
+        var giftCountRows = JSON.parse(this.responseText);
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Production Line');
+        data.addColumn('number', 'Gifts Delivered');
+        for (var i = 0; i < giftCountRows.length; i++) {
+          var giftCountRow = giftCountRows[i];
+          data.addRows([[giftCountRow['productionLine'], giftCountRow['giftCount']]]);
+        }
+        giftCountChart.draw(data, giftCountOptions);
+      }
+
+      function drawFirstGiftChart() {
+        var firstGiftRows = JSON.parse(this.responseText);
+        var leaderboard = "";
+        if (firstGiftRows.length == 0) {
+          leaderboard = "No gifts delivered yet!"
+        } else {
+          leaderboard = "<ol>";
+          for (var i = 0; i < firstGiftRows.length; i++) {
+            var firstGiftRow = firstGiftRows[i];
+            leaderboard += "<li>" + firstGiftRow['productionLine'] + "</li>\n";
+          }
+          leaderboard += "</ol>";
+        }
+        document.getElementById('firstGiftChart').innerHTML = leaderboard;
+      }
+    </script>
+  </head>
+
+  <body>
+    <table width="100%">
+      <tr valign="top">
+        <td width="30%">
+          <h3>Leaderboard</h3>
+          <div id="firstGiftChart"></div>
+        </td>
+        <td width="70%">
+          <h3>Number of Gifts Delivered</h3>
+          <div id="giftCountChart"></div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
